@@ -204,6 +204,13 @@ namespace IntuitChallengeAPI.Controllers
                     return new InsertResponse("ERROR", msjError);
                 }
 
+                if (await ExisteUsuario(0, request.Cliente.Cuit))
+                {
+                    string msjError = $"Ya existe un usuario con Cuit: {request.Cliente.Cuit}.";
+                    await _logger.GuardarError(msjError);
+                    return new InsertResponse("ERROR", msjError);
+                }
+
                 Cliente clienteNuevo = new()
                 {
                     Apellidos = request.Cliente.Apellidos,
@@ -301,11 +308,19 @@ namespace IntuitChallengeAPI.Controllers
                     return new UpdateResponse("ERROR", msjError);
                 }
 
+
                 Cliente? cliente = await _db.Clientes.Where(x => x.Id == request.Cliente.Id).FirstOrDefaultAsync();
 
                 if (cliente == null)
                 {
                     string msjError = $"No existe ningun cliente con Id: {request.Cliente.Id}.";
+                    await _logger.GuardarError(msjError);
+                    return new UpdateResponse("ERROR", msjError);
+                }
+
+                if (await ExisteUsuario(request.Cliente.Id, request.Cliente.Cuit))
+                {
+                    string msjError = $"Ya existe un usuario con Cuit: {cliente.Cuit}.";
                     await _logger.GuardarError(msjError);
                     return new UpdateResponse("ERROR", msjError);
                 }
@@ -318,8 +333,8 @@ namespace IntuitChallengeAPI.Controllers
                 cliente.Nombres = request.Cliente.Nombres;
                 cliente.TelefonoCelular = request.Cliente.TelefonoCelular;
 
-
-                if (await _db.SaveChangesAsync() < 1)
+                int rowsAffected = await _db.SaveChangesAsync();
+                if (rowsAffected < 1)
                 {
                     string msjError = $"Ocurrio un error al editar el cliente.";
                     await _logger.GuardarError(msjError);
@@ -333,6 +348,24 @@ namespace IntuitChallengeAPI.Controllers
                 string msjError = $"Ocurrio un error inesperado: {ex.Message}.";
                 await _logger.GuardarError(msjError);
                 return new UpdateResponse("ERROR", msjError);
+            }
+        }
+        private async Task<bool> ExisteUsuario(int idUsuario, string cuit)
+        {
+            try
+            {
+                Cliente? clienteExistente = await _db.Clientes.Where(x => x.Cuit == cuit && (idUsuario == 0 || x.Id != idUsuario)).FirstOrDefaultAsync();
+
+                if (clienteExistente != null)
+                    return true;
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                string msjError = $"Ocurrio un error inesperado: {ex.Message}.";
+                await _logger.GuardarError(msjError);
+                return true;
             }
         }
     }
