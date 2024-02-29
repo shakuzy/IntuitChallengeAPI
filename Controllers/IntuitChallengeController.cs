@@ -223,7 +223,6 @@ namespace IntuitChallengeAPI.Controllers
                 };
 
                 await _db.Clientes.AddAsync(clienteNuevo);
-
                 if (await _db.SaveChangesAsync() < 1)
                 {
                     string msjError = $"Ocurrio un error al agregar el cliente.";
@@ -320,11 +319,19 @@ namespace IntuitChallengeAPI.Controllers
 
                 if (await ExisteUsuario(request.Cliente.Id, request.Cliente.Cuit))
                 {
-                    string msjError = $"Ya existe un usuario con Cuit: {cliente.Cuit}.";
+                    string msjError = $"Ya existe un usuario con Cuit: {request.Cliente.Cuit}.";
                     await _logger.GuardarError(msjError);
                     return new UpdateResponse("ERROR", msjError);
                 }
 
+                if (cliente.Apellidos == request.Cliente.Apellidos && cliente.Cuit == request.Cliente.Cuit &&
+                cliente.Domicilio == request.Cliente.Domicilio &&
+                cliente.Email == request.Cliente.Email &&
+                cliente.FechaNacimiento == request.Cliente.FechaNacimiento &&
+                cliente.Nombres == request.Cliente.Nombres &&
+                cliente.TelefonoCelular == request.Cliente.TelefonoCelular)
+                    return new UpdateResponse("OK");
+                
                 cliente.Apellidos = request.Cliente.Apellidos;
                 cliente.Cuit = request.Cliente.Cuit;
                 cliente.Domicilio = request.Cliente.Domicilio;
@@ -333,8 +340,8 @@ namespace IntuitChallengeAPI.Controllers
                 cliente.Nombres = request.Cliente.Nombres;
                 cliente.TelefonoCelular = request.Cliente.TelefonoCelular;
 
-                int rowsAffected = await _db.SaveChangesAsync();
-                if (rowsAffected < 1)
+                
+                if (await _db.SaveChangesAsync() < 1)
                 {
                     string msjError = $"Ocurrio un error al editar el cliente.";
                     await _logger.GuardarError(msjError);
